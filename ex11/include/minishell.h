@@ -1,6 +1,7 @@
 #ifndef MINISHELL_H
 #define MINISHELL_H
 #include <stdlib.h>
+
 /*                                    Hints
  * Use "$_>" for prompt
  *
