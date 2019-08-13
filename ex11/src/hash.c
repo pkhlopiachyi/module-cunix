@@ -1,78 +1,67 @@
 #include "../include/hash.h"
-#include <stdio.h>
-#include <stdlib.h>
 #include "../include/linked_list.h"
+#include <stdlib.h>
+#include <stddef.h>
+#include <stdio.h>
 
 hashtable_t *hash_create(unsigned int size)
 {
-  hashtable_t   *node_n;
-  if(size > 0)
-  {
-    node_n = (hashtable_t *) malloc(sizeof(hashtable_t));
-    node_n->size = size;
-    node_n->table = (void **) malloc(size * sizeof(void *));
-    for(unsigned int i = 0; i < size; i++)
-      node_n->table[i] = NULL;
-    return node_n;
-  }
-  return NULL;
+  if (size <= 0)
+    return NULL;
+  hashtable_t *tbl = (hashtable_t *) malloc(sizeof(hashtable_t));
+  tbl->size = size;
+  tbl->table = (void **) malloc(sizeof(void *) * size);
+  for (int i = 0; i < size; i++)
+    tbl->table[i] = NULL;
+  return tbl;
 }
 
-void hash_destroy(hashtable_t *ht)
+void hash_destroy(hashtable_t *ht, void (*fp)(void *data))
 {
-  node_t *node_n;
-  for(unsigned int i = 0; i < ht->size; i++)
-  {
-    if(ht->table[i] != NULL)
-    {
-      node_n = ht->table[i];
-      list_destroy(&node_n);
-    }
-  }
-  free(ht->table);
-  ht->table = NULL;
-  free(ht);
+ if (ht == NULL)
+   return;
+ node_t *tmp;
+ for(int i = 0; i < ht->size; i++)
+ if(ht->table[i] != NULL)
+ {
+   tmp = ht->table[i];
+   list_destroy(&tmp, fp);
+ }
+ free(ht->table);
+ ht->table = NULL;
+ free(ht);
 }
 
 unsigned int hash_func(char *key)
 {
-  if (key == NULL)
-    return 0;
-  int temp = 0;
-  int i = 0;
-  while (key[i] != '\0')
-  {
-    temp += key[i];
-    i++;
-  }
-  return temp;
+ if(key == NULL)
+   return 0;
+ int res = 0;
+ for(int i = 0; *key != '\0'; i++, key++)
+   res += *(key);
+ return res;
 }
 
 void hash_set(hashtable_t *ht, char *key, void *ptr)
 {
-  int count;
-  count = hash_func(key) % ht->size;
-  if(ht->table[count] == NULL)
-    ht->table[count] = list_create(ptr);
-  else
-    list_push(ht->table[count], ptr, key);
+ unsigned int i = hash_func(key) % ht->size;
+ if(ht->table[i] == NULL)
+   ht->table[i] = list_create(ptr);
+ else
+ if(hash_get(ht, key) == NULL)
+   list_push(ht->table[i], ptr);
+ else
+ {
+   list_rem(ht->table[i], hash_get(ht, key));
+   list_push(ht->table[i], ptr);
+ }
 }
-
-void  *hash_get(hashtable_t *ht, char *key)
+void *hash_get(hashtable_t *ht, char *key)
 {
-  int count;
-  node_t *node_n;
-  count = hash_func(key) % ht->size;
-  if(ht->table[count] == NULL)
-    return NULL;
-  node_n = ht->table[count];
-  return (node_n->data);
+ int i = hash_func(key) % ht->size;
+ if(ht->table[i] == NULL)
+   return NULL;
+ node_t *tmp = ht->table[i];
+ return tmp->data;
 }
 
-void *hash_print(hashtable_t *ht){
-    for(int i = 0; i < ht -> size; i++){
-        list_print((node_t*)ht -> table[i]);
-    }
-
-    printf("\n");
-}
